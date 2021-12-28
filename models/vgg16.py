@@ -1,6 +1,6 @@
 from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense
-from keras.utils.version_utils import ModelVersionSelector
 from keras.constraints import maxnorm
+from keras.models import Model
 
 def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3):
     input_image = Input(shape=(img_width,img_height,img_channels))
@@ -35,4 +35,6 @@ def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3):
     x=Dropout(dropout)(x6)
     out= Dense(num_classes, activation='softmax')(x)
 
-    model = ModelVersionSelector(inputs = input_image, outputs = out)
+    model = Model(inputs = input_image, outputs = out)
+    
+    return model
