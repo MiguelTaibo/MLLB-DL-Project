@@ -5,11 +5,11 @@ import time
 import math
 
 import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 from tensorflow.keras.datasets import cifar10
 
 from keras.layers import Input, Dense
-from keras.callbacks import LearningRateScheduler
+from keras.callbacks import LearningRateScheduler, EarlyStopping
 
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from keras.optimizers import gradient_descent_v2 
@@ -17,16 +17,17 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.utils import to_categorical
 
 from models.vgg16 import VGG16
+from utils import saveFigures
 
 ## Set API back-end direction
 backend="http://172.19.0.1:8003/api/"
 
 ## Set how many samples you want to get
-tota_iter = 20
+tota_iter = 30
 
 experiment = {
-    "name": "PRDL-exp1",
-    "n_ins": 2, 
+    "name": "PRDL-EXPERIMENT1",
+    "n_ins": 3, 
     "input_names": ["Learning rate", "LR drop", "dropout"], 
     "input_mms": [[0, 0.1],[10, 190],[0,1]],
     "n_objs": 1,
@@ -38,18 +39,20 @@ experiment = {
     "acqfunct_hps": {"N": 1000, "M": 50}
 }
 
+print(experiment)
+
 response = requests.post(backend+'startexp', json=experiment)
 if response.status_code==200:
     response = response.json()
     for key in response:
         experiment[key]=response[key]
-
+else:
+    print(response.json()['detail'])
 
 if not os.path.exists(experiment["name"]):
     os.makedirs(experiment["name"])
 
 print(experiment)
-
 ### Don't be greedy on GPU RAM
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -62,7 +65,7 @@ img_width = 32
 img_height = 32
 img_channels = 3
 
-batch_size = 1024
+batch_size = 512
 training_epochs = 250
 
 output_dim = 10
@@ -89,7 +92,6 @@ dropout = 0.5
 #lr_decay = 1e-2
 #momentum = 0.9
 
-
 ### Define model
 model = VGG16(
     dropout=dropout,
@@ -103,6 +105,16 @@ def lr_scheduler(epoch):
     return learning_rate * (math.e ** (-epoch / lr_drop))
 reduce_lr = LearningRateScheduler(lr_scheduler)
 
+early_stop = EarlyStopping(
+    monitor="val_loss",
+    min_delta=0,
+    patience=25,
+    verbose=0,
+    mode="auto",
+    baseline=None,
+    restore_best_weights=True,
+)
+
 optimizer = gradient_descent_v2.SGD(learning_rate=learning_rate, nesterov=False)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
@@ -113,8 +125,8 @@ history = model.fit(
         train_labels, 
         batch_size=batch_size), 
     epochs=training_epochs, 
-    verbose=1,     
-    callbacks=[reduce_lr],
+    verbose=2,     
+    callbacks=[reduce_lr,early_stop],
     steps_per_epoch=train_images.shape[0] // batch_size, 
     validation_data=(test_images, test_labels))
 
@@ -122,6 +134,9 @@ history = model.fit(
 y = [history.history["val_accuracy"][-1]]
 x = [learning_rate, lr_drop, dropout]
 response = requests.post(backend+"setsample/"+str(experiment["id"]), json={"x": x, "y": y})
+
+### Save figures
+saveFigures(experiment["name"], history, "accuracy_0", "loss_0")
 
 
 ## Main Loop
@@ -155,14 +170,16 @@ for i in range(tota_iter):
             batch_size=batch_size), 
         epochs=training_epochs, 
         verbose=1,     
-        callbacks=[reduce_lr],
+        callbacks=[reduce_lr,early_stop],
         steps_per_epoch=train_images.shape[0] // batch_size, 
         validation_data=(test_images, test_labels))
 
     y = [history.history["val_accuracy"][-1]]
-    x = [learning_rate, lr_drop]
+    x = [learning_rate, lr_drop, dropout]
 
     print("-"*60)
     print(x, y)
     print("-"*60)
     response = requests.post(backend+"setsample/"+str(experiment["id"]), json={"x": x, "y": y})
+
+    saveFigures(experiment["name"], history, "accuracy_"+str(i+1), "loss_"+str(i+1))
