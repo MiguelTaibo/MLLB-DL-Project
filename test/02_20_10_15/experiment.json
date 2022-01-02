@@ -1,0 +1,26 @@
+{
+    "parameters": {
+        "name_model": "Prueba",
+        "compile_parameters": "{'metrics': ['accuracy'], 'optimizer': <keras.optimizers.SGD object at 0x0000023823FA4AC8>}",
+        "batch_size": 20,
+        "epochs": 1,
+        "initial_epoch": 0,
+        "initial_lr": 0.0001,
+        "num_classes": 10,
+        "dropout": 0.5
+    },
+    "train_result2": {
+        "val_loss": {
+            "0": 2.302617726325989
+        },
+        "val_accuracy": {
+            "0": 0.10000000149011612
+        },
+        "loss": {
+            "0": 2.3028771343231202
+        },
+        "accuracy": {
+            "0": 0.10126666724681854
+        }
+    }
+}
