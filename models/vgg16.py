@@ -1,6 +1,6 @@
 from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense
 from keras.constraints import maxnorm
-from keras.models import Model
+from keras.models import Model,Sequential
 
 def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3):
     input_image = Input(shape=(img_width,img_height,img_channels))
@@ -37,4 +37,12 @@ def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3):
 
     model = Model(inputs = input_image, outputs = out)
     
+    return model
+
+def MLP_model(n_hidden, img_width=32, img_height=32, img_channels=3, num_classes=10):
+    model = Sequential()
+    model.add(InputLayer(input_shape=(img_width,img_height,img_channels)))
+    for layer in reversed(range(n_hidden)):
+        model.add(Dense((img_height*img_width+num_classes)*(layer+1)/(n_hidden+1), activation="relu"))
+    model.add(Dense(num_classes, activation="softmax"))
     return model
