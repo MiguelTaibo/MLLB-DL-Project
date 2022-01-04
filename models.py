@@ -1,4 +1,4 @@
-from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense
+from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense, InputLayer
 from keras.constraints import maxnorm
 from keras.models import Model,Sequential
 
@@ -80,9 +80,12 @@ def VGG19(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3):
     return model
 
 def MLP_model(n_hidden, img_width=32, img_height=32, img_channels=3, num_classes=10):
-    model = Sequential()
-    model.add(InputLayer(input_shape=(img_width,img_height,img_channels)))
+    input_image = Input(shape=(img_width,img_height,img_channels))
+    x = Flatten()(input_image)
+    
     for layer in reversed(range(n_hidden)):
-        model.add(Dense((img_height*img_width+num_classes)*(layer+1)/(n_hidden+1), activation="relu"))
-    model.add(Dense(num_classes, activation="softmax"))
+        x = Dense((img_height*img_width+num_classes)*(layer+1)/(n_hidden+1), activation='relu', kernel_constraint=maxnorm(3))(x)
+    out= Dense(num_classes, activation='softmax')(x)
+    model = Model(inputs = input_image, outputs = out)
+    
     return model
