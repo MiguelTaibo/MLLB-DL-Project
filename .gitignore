@@ -3,3 +3,8 @@ venv/
 *.h5
 *.pyc
 
+__pycache__/
+*/__pycache__/
+
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
