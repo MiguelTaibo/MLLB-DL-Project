@@ -1,0 +1,12 @@
+{
+    "parameters": {
+        "name_model": "MLP-10layers",
+        "compile_parameters": "{'metrics': ['accuracy'], 'optimizer': <keras.optimizers.SGD object at 0x000002776A2993C8>}",
+        "batch_size": 512,
+        "epochs": 200,
+        "initial_epoch": 0,
+        "initial_lr": 0.05,
+        "num_classes": 10,
+        "dropout": 0.5
+    }
+}
