@@ -79,12 +79,13 @@ def VGG19(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l
     
     return model
 
-def MLP_model(n_hidden, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0):
+def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0,n_hidden=2):
     input_image = Input(shape=(img_width,img_height,img_channels))
     x = Flatten()(input_image)
     
     for layer in reversed(range(n_hidden)):
         x = Dense(int((img_height*img_width+num_classes)*(layer+1)/(n_hidden+1)), activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg),bias_regularizer=l2(l2_reg))(x)
+    x=Dropout(dropout)(x)
     out= Dense(num_classes, activation='softmax',kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg),bias_regularizer=l2(l2_reg))(x)
     model = Model(inputs = input_image, outputs = out)
     
