@@ -1,5 +1,4 @@
-from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense, InputLayer
-from keras.layers.normalization import BatchNormalization
+from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense, InputLayer,BatchNormalization
 from keras.constraints import maxnorm
 from keras.models import Model
 from keras.regularizers import l2
@@ -106,7 +105,7 @@ def VGG19(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l
     
     return model
 
-def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0,n_hidden=2):
+def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0,n_hidden=2, batch_norm = False):
     input_image = Input(shape=(img_width,img_height,img_channels))
     x = Flatten()(input_image)
     
@@ -115,8 +114,10 @@ def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=
             kernel_constraint=maxnorm(3),
             kernel_initializer="glorot_uniform",
             kernel_regularizer=l2(l2_reg))(x)
-        x=BatchNormalization()(x)
-        x=Dropout(dropout)(x)
+        if batch_norm:
+            x=BatchNormalization()(x)
+        if dropout>0.0:
+            x=Dropout(dropout)(x)
         
     out= Dense(num_classes, activation='softmax',kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
     model = Model(inputs = input_image, outputs = out)
