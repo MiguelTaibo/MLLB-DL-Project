@@ -1,0 +1,21 @@
+{
+    "parameters": {
+        "name_model": "VGG16_l2_reg_1e-4",
+        "compile_parameters": "{'metrics': ['accuracy'], 'optimizer': <keras.optimizers.SGD object at 0x00000232257A4608>}",
+        "l2_reg": 0.0001,
+        "batch_size": 512,
+        "epochs": 200,
+        "initial_epoch": 0,
+        "initial_lr": 0.05,
+        "num_classes": 10,
+        "dropout": 0,
+        "batch_norm": false,
+        "data_aug": false
+    },
+    "augmentation_parameters": {
+        "used": "False",
+        "rotation_range": "45",
+        "horizontal_flip": "True",
+        "zoom_range": "0.3"
+    }
+}

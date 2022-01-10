@@ -1,0 +1,15 @@
+{
+    "parameters": {
+        "name_model": "VGG16_initial_lr_5e-2",
+        "compile_parameters": "{'metrics': ['accuracy'], 'optimizer': <keras.optimizers.SGD object at 0x0000014686FD8888>}",
+        "l2_reg": 0,
+        "batch_size": 512,
+        "epochs": 200,
+        "initial_epoch": 0,
+        "initial_lr": 0.05,
+        "num_classes": 10,
+        "dropout": 0,
+        "batch_norm": false,
+        "data_aug": false
+    }
+}
