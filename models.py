@@ -3,7 +3,9 @@ from keras.layers import Embedding, LSTM, ConvLSTM2D, MaxPooling3D, Layer
 from keras.constraints import maxnorm
 from keras.models import Model
 from keras.regularizers import l2
+
 import tensorflow as tf
+from keras import applications
 
 def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l2_reg=0, batch_norm = False):
     
@@ -126,6 +128,7 @@ def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=
     
     return model
 
+
 def LSTM_singleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0):
 
     input_image = Input(shape=(img_width, img_height, img_channels))
@@ -202,3 +205,25 @@ class UnpatchLayer(Layer):
 
         len = tf.cast(tf.math.sqrt(tf.cast(inputs.shape[1],tf.float64)),tf.int32)
         return tf.reshape(inputs,[-1, len,len, inputs.shape[4]])
+
+def Transfer_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0, batch_norm = False):
+    input_image = Input(shape=(img_width,img_height,img_channels))
+    train_model = applications.VGG16(weights='imagenet',input_tensor=input_image, include_top=False,input_shape=(img_width, img_height, img_channels), pooling=None)
+    if batch_norm:
+        x = BatchNormalization()(train_model.layers[-1].output)
+        x = Flatten()(x)
+    else:
+        x = Flatten()(train_model.layers[-1].output)
+    x=Dropout(dropout)(x)
+    x=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
+    x=Dropout(dropout)(x)
+    x=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
+    x=Dropout(dropout)(x)
+    out= Dense(num_classes, activation='softmax',kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
+
+    model = Model(inputs = input_image, outputs = out)
+    #Freezing top layers (Don't change the value in the trainng process)
+    for layer in train_model.layers:
+            layer.trainable = False
+
+    return model
