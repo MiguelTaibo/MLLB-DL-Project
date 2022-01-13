@@ -1,8 +1,12 @@
 from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Input, Dense, InputLayer,BatchNormalization
+from keras.layers import Embedding, LSTM, ConvLSTM2D, MaxPooling3D, Layer
 from keras.constraints import maxnorm
 from keras.models import Model
 from keras.regularizers import l2
+
+import tensorflow as tf
 from keras import applications
+
 def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l2_reg=0, batch_norm = False):
     
     input_image = Input(shape=(img_width,img_height,img_channels))
@@ -105,7 +109,7 @@ def VGG19(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l
     
     return model
 
-def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0,n_hidden=2, batch_norm = False):
+def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0, n_hidden=2, batch_norm = False):
     input_image = Input(shape=(img_width,img_height,img_channels))
     x = Flatten()(input_image)
     
@@ -123,6 +127,85 @@ def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=
     model = Model(inputs = input_image, outputs = out)
     
     return model
+
+
+def LSTM_singleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0):
+
+    input_image = Input(shape=(img_width, img_height, img_channels))
+
+    x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    #x1 = UnpatchLayer()(x1)
+    #x1 = MaxPooling2D((2, 2))(x1)
+
+    x2 = Flatten()(x1)
+    x2= Dense(4096, activation='softmax')(x2)
+    out= Dense(num_classes, activation='softmax')(x2)
+
+    model = Model(inputs = input_image, outputs = out)
+    return model
+
+
+def LSTM_doubleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0):
+
+    input_image = Input(shape=(img_width, img_height, img_channels))
+
+    x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    x1 = UnpatchLayer()(x1)
+    #x1 = MaxPooling2D((2, 2))(x1)
+
+    x2 = PatchLayer(patch_size=2, horizontal=False)(x1)  ## Patching layer (no trainnable parameters) 
+    x2 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x2)
+    x2 = UnpatchLayer()(x2)
+    # x1 = MaxPooling3D((2,2,1))(x1)
+
+    x3 = Flatten()(x2)
+    x3 = Dense(4096, activation='softmax')(x3)
+    out= Dense(num_classes, activation='softmax')(x3)
+
+    model = Model(inputs = input_image, outputs = out)
+    return model
+
+class PatchLayer(Layer):
+
+  def __init__( self , patch_size, horizontal=False):
+    super(PatchLayer, self ).__init__()
+    self.patch_size = patch_size
+    # If horizontal or vertical
+    self.horizontal = horizontal
+
+  def call(self, inputs):
+    patches = []
+
+    if self.horizontal:
+        for i in range( 0 , inputs.shape[1] , self.patch_size ):
+            for j in range( 0 , inputs.shape[1] , self.patch_size ):
+                patches.append( inputs[:, i : i + self.patch_size , j : j + self.patch_size , : ])
+    else:
+        for j in range( 0 , inputs.shape[1] , self.patch_size ):
+            for i in range( 0 , inputs.shape[1] , self.patch_size ):
+                patches.append( inputs[:, i : i + self.patch_size , j : j + self.patch_size , : ])
+
+    patches = tf.transpose(tf.convert_to_tensor(patches),[1,0,2,3,4])
+    return patches
+
+  def get_config(self):
+    config = super().get_config().copy()
+    config.update({
+        "patch_size" : self.patch_size
+    })
+    return config
+
+class UnpatchLayer(Layer):
+    def __init__( self):
+        super(UnpatchLayer, self ).__init__()
+
+    def call(self, inputs):
+
+        len = tf.cast(tf.math.sqrt(tf.cast(inputs.shape[1],tf.float64)),tf.int32)
+        return tf.reshape(inputs,[-1, len,len, inputs.shape[4]])
+
 def Transfer_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0, batch_norm = False):
     input_image = Input(shape=(img_width,img_height,img_channels))
     train_model = applications.VGG16(weights='imagenet',input_tensor=input_image, include_top=False,input_shape=(img_width, img_height, img_channels), pooling=None)
