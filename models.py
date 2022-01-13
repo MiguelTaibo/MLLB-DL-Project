@@ -126,58 +126,79 @@ def MLP_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=
     
     return model
 
-def LSTM_model(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10,l2_reg=0,n_hidden=2, batch_norm = False):
+def LSTM_singleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0):
 
     input_image = Input(shape=(img_width, img_height, img_channels))
 
-    x1 = PatchLayer(patch_size=2, h_or_v=True, f_or_b=True)(input_image)
-    
-    # x1 = Embedding(1, 256)(x1)
-    x1 = ConvLSTM2D(256, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
-    
-    # x1 = MaxPooling3D(pool_size=(1, 2, 2)) (x1)
+    x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    #x1 = UnpatchLayer()(x1)
+    #x1 = MaxPooling2D((2, 2))(x1)
 
-    # x2 = ConvLSTM2D(128, (3,3), padding="same", return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
-    # x2 = ConvLSTM2D(128, (3,3), padding="same", return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x2)
-    # x2 = MaxPooling3D(pool_size=(1, 2, 2)) (x2)
+    x2 = Flatten()(x1)
+    x2= Dense(4096, activation='softmax')(x2)
+    out= Dense(num_classes, activation='softmax')(x2)
 
-    x1 = Flatten()(x1)
-    # x3 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x3)
-    # x3 = Dropout(dropout)(x3)
-    # x3 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x3)
-    # x  = Dropout(dropout)(x3)
-    out= Dense(num_classes, activation='softmax')(x1)
+    model = Model(inputs = input_image, outputs = out)
+    return model
+
+
+def LSTM_doubleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_classes=10, l2_reg=0):
+
+    input_image = Input(shape=(img_width, img_height, img_channels))
+
+    x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    x1 = UnpatchLayer()(x1)
+    #x1 = MaxPooling2D((2, 2))(x1)
+
+    x2 = PatchLayer(patch_size=2, horizontal=False)(x1)  ## Patching layer (no trainnable parameters) 
+    x2 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x2)
+    x2 = UnpatchLayer()(x2)
+    # x1 = MaxPooling3D((2,2,1))(x1)
+
+    x3 = Flatten()(x2)
+    x3 = Dense(4096, activation='softmax')(x3)
+    out= Dense(num_classes, activation='softmax')(x3)
 
     model = Model(inputs = input_image, outputs = out)
     return model
 
 class PatchLayer(Layer):
 
-  def __init__( self , patch_size, h_or_v = False, f_or_b = False ):
+  def __init__( self , patch_size, horizontal=False):
     super(PatchLayer, self ).__init__()
     self.patch_size = patch_size
-    self.h_or_v = h_or_v
-    self.f_or_b = f_or_b
+    # If horizontal or vertical
+    self.horizontal = horizontal
 
   def call(self, inputs):
     patches = []
 
-    for i in range( 0 , inputs.shape[1] , self.patch_size ):
+    if self.horizontal:
+        for i in range( 0 , inputs.shape[1] , self.patch_size ):
+            for j in range( 0 , inputs.shape[1] , self.patch_size ):
+                patches.append( inputs[:, i : i + self.patch_size , j : j + self.patch_size , : ])
+    else:
         for j in range( 0 , inputs.shape[1] , self.patch_size ):
-            patches.append( inputs[:, i : i + self.patch_size , j : j + self.patch_size , : ] )
+            for i in range( 0 , inputs.shape[1] , self.patch_size ):
+                patches.append( inputs[:, i : i + self.patch_size , j : j + self.patch_size , : ])
+
     patches = tf.transpose(tf.convert_to_tensor(patches),[1,0,2,3,4])
     return patches
 
-    # if self.h_or_v: ## Horizontal patching
-    #     iterator = range( 0 , inputs.shape[2] , self.patch_size ) if self.f_or_b else reversed(range( 0 , inputs.shape[2] , self.patch_size ))
+  def get_config(self):
+    config = super().get_config().copy()
+    config.update({
+        "patch_size" : self.patch_size
+    })
+    return config
 
-    #     for i in range( 0 , inputs.shape[1] , self.patch_size ):
-    #         for j in iterator:
-    #             patches.append( inputs[ : , i : i + self.patch_size , j : j + self.patch_size , : ] )
+class UnpatchLayer(Layer):
+    def __init__( self):
+        super(UnpatchLayer, self ).__init__()
 
-    # else: ## Vertical patching
-    #     iterator = range( 0 , inputs.shape[1] , self.patch_size ) if self.f_or_b else reversed(range( 0 , inputs.shape[1] , self.patch_size ))
+    def call(self, inputs):
 
-    #     for j in range( 0 , inputs.shape[2] , self.patch_size ):
-    #         for i in iterator:
-    #             patches.append( inputs[ : , i : i + self.patch_size , j : j + self.patch_size , : ] )
+        len = tf.cast(tf.math.sqrt(tf.cast(inputs.shape[1],tf.float64)),tf.int32)
+        return tf.reshape(inputs,[-1, len,len, inputs.shape[4]])
