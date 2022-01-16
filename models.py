@@ -189,7 +189,7 @@ def ResNet21(dropout, num_classes=10, img_width=32, img_height=32, img_channels=
         x5=BatchNormalization()(x5)
 
     x6 = Flatten()(x5)
-    x6 = Dropout(dropout)(x6)
+    #x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
     x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
@@ -265,7 +265,7 @@ def ResNet25(dropout, num_classes=10, img_width=32, img_height=32, img_channels=
         x5=BatchNormalization()(x5)
 
     x6 = Flatten()(x5)
-    x6 = Dropout(dropout)(x6)
+    #x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
     x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
