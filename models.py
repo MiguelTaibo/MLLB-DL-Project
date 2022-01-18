@@ -45,7 +45,6 @@ def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l
         x5 = BatchNormalization()(x5)
 
     x6 = Flatten()(x5)
-    x6=Dropout(dropout)(x6)
     x6=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
     x6=Dropout(dropout)(x6)
     x6=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
@@ -98,7 +97,6 @@ def VGG19(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l
         x5=BatchNormalization()(x5)
 
     x6 = Flatten()(x5)
-    x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
     x6 = Dropout(dropout)(x6)
     x6 = Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x6)
@@ -282,12 +280,11 @@ def LSTM_singleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_c
     input_image = Input(shape=(img_width, img_height, img_channels))
 
     x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
-    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg), dropout=dropout)(x1)
     #x1 = UnpatchLayer()(x1)
     #x1 = MaxPooling2D((2, 2))(x1)
 
     x2 = Flatten()(x1)
-    x2= Dense(4096, activation='softmax')(x2)
     out= Dense(num_classes, activation='softmax')(x2)
 
     model = Model(inputs = input_image, outputs = out)
@@ -299,17 +296,15 @@ def LSTM_doubleSweep(dropout, img_width=32, img_height=32, img_channels=3, num_c
     input_image = Input(shape=(img_width, img_height, img_channels))
 
     x1 = PatchLayer(patch_size=2, horizontal=True)(input_image)  ## Patching layer (no trainnable parameters) 
-    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x1)
+    x1 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg), dropout=dropout)(x1)
     x1 = UnpatchLayer()(x1)
     #x1 = MaxPooling2D((2, 2))(x1)
 
     x2 = PatchLayer(patch_size=2, horizontal=False)(x1)  ## Patching layer (no trainnable parameters) 
-    x2 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg))(x2)
-    x2 = UnpatchLayer()(x2)
+    x2 = ConvLSTM2D(64, (2,2), return_sequences=True, activation="tanh", kernel_regularizer=l2(l2_reg), dropout=dropout)(x2)
     # x1 = MaxPooling3D((2,2,1))(x1)
 
     x3 = Flatten()(x2)
-    x3 = Dense(4096, activation='softmax')(x3)
     out= Dense(num_classes, activation='softmax')(x3)
 
     model = Model(inputs = input_image, outputs = out)
