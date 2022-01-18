@@ -17,7 +17,7 @@
         "horizontal_flip": "True",
         "zoom_range": "0.3"
     },
-    "train_augmentation_result": {
+    "train_result": {
         "loss": {
             "0": 2.299250364303589,
             "1": 2.2906229496002197,
