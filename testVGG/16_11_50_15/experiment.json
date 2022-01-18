@@ -1,0 +1,21 @@
+{
+    "parameters": {
+        "name_model": "MLP-2layers-all",
+        "compile_parameters": "{'metrics': ['accuracy'], 'optimizer': <keras.optimizer_v2.gradient_descent.SGD object at 0x7f323c50a970>}",
+        "l2_reg": 0.001,
+        "batch_size": 512,
+        "epochs": 200,
+        "initial_epoch": 0,
+        "initial_lr": 0.01,
+        "num_classes": 10,
+        "dropout": 0.25,
+        "batch_norm": true,
+        "data_aug": true
+    },
+    "augmentation_parameters": {
+        "used": "True",
+        "rotation_range": "45",
+        "horizontal_flip": "True",
+        "zoom_range": "0.3"
+    }
+}
