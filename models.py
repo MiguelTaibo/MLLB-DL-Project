@@ -5,7 +5,7 @@ from keras.models import Model
 from keras.regularizers import l2
 
 import tensorflow as tf
-from keras import applications
+from tensorflow.keras import applications
 
 def VGG16(dropout, num_classes=10, img_width=32, img_height=32, img_channels=3,l2_reg=0, batch_norm = False):
     
