@@ -357,7 +357,6 @@ def Transfer_model(dropout, img_width=32, img_height=32, img_channels=3, num_cla
         x = Flatten()(x)
     else:
         x = Flatten()(train_model.layers[-1].output)
-    x=Dropout(dropout)(x)
     x=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
     x=Dropout(dropout)(x)
     x=Dense(512, activation='relu', kernel_constraint=maxnorm(3),kernel_initializer="glorot_uniform",kernel_regularizer=l2(l2_reg))(x)
@@ -367,6 +366,6 @@ def Transfer_model(dropout, img_width=32, img_height=32, img_channels=3, num_cla
     model = Model(inputs = input_image, outputs = out)
     #Freezing top layers (Don't change the value in the trainng process)
     for layer in train_model.layers:
-            layer.trainable = False
+            layer.trainable = True
 
     return model
